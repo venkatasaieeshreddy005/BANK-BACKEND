@@ -1,7 +1,15 @@
 const express = require("express");
 const app = express();
 
-const authrouter=require("./routes/auth")
+const cookieparser=require("cookie-parser");
+
+
+app.use(express.json());
+app.use(cookieparser());
+
+const authrouter=require("./routes/auth");
+
+
 
 app.use("/api/auth",authrouter);
 
