@@ -49,15 +49,11 @@ const sendRegistrationEmail = async (userEmail, name) => {
 
     const subject = "Welcome to Bank Ledger!";
 
-    const text = `
-Hello ${name},
-
-Thank you for registering at Bank Ledger.
-We're excited to have you on board!
-
-Best regards,
-The Bank Ledger Team
-`;
+    const text = `Hello ${name},Thank you for registering at Bank Ledger.
+                    We're excited to have you on board!
+                    Best regards,
+                    The Bank Ledger Team
+                    `;
 
     const html = `
 <html>
@@ -81,8 +77,104 @@ The Bank Ledger Team
 };
 
 
+const sendTransactionEmail = async (userEmail, name, amount, toAccount) => {
+    const subject = "Transaction Successful!";
+
+    const text = `Hello ${name},
+
+Your transaction was successful.
+
+Amount: ${amount}
+Transferred to: ${toAccount}
+
+Thank you for using Bank Ledger.
+
+Best regards,
+The Bank Ledger Team`;
+
+    const html = `
+<html>
+<body>
+    <p>Hello ${name},</p>
+
+    <p>
+        Your transaction was <strong>successful</strong>.
+    </p>
+
+    <p>
+        <strong>Amount:</strong> ${amount}<br>
+        <strong>Transferred to:</strong> ${toAccount}
+    </p>
+
+    <p>
+        Thank you for using <strong>Bank Ledger</strong>.
+    </p>
+
+    <p>
+        Best regards,<br>
+        <strong>The Bank Ledger Team</strong>
+    </p>
+</body>
+</html>
+`;
+
+    await sendEmail(userEmail, subject, text, html);
+};
+
+
+const sendTransactionFailedEmail = async (userEmail,name,amount,toAccount) => {
+    const subject = "Transaction Failed";
+
+    const text = `Hello ${name},
+
+Unfortunately, your transaction could not be completed.
+
+Amount: ${amount}
+Attempted transfer to: ${toAccount}
+
+
+Please check your account details and try again.
+
+Best regards,
+The Bank Ledger Team`;
+
+    const html = `
+<html>
+<body>
+    <p>Hello ${name},</p>
+
+    <p>
+        Unfortunately, your transaction
+        <strong>could not be completed</strong>.
+    </p>
+
+    <p>
+        <strong>Amount:</strong> ${amount}<br>
+        <strong>Attempted transfer to:</strong> ${toAccount}<br>
+        
+    </p>
+
+    <p>
+        Please check your account details and try again.
+    </p>
+
+    <p>
+        Best regards,<br>
+        <strong>The Bank Ledger Team</strong>
+    </p>
+</body>
+</html>
+`;
+
+    await sendEmail(userEmail, subject, text, html);
+};
+
+
 module.exports = {
     transporter,
     sendEmail,
-    sendRegistrationEmail
+    sendRegistrationEmail,
+    sendTransactionEmail,
+    sendTransactionFailedEmail,
+
 };
