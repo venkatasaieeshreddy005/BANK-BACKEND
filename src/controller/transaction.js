@@ -46,7 +46,7 @@ module.exports.createTransaction = async (req, res) => {
             return res.status(400).json({ message: "Cannot transfer funds to the same account" });
         }
 
-        // 2. Validate Idempotency (Fixed variable name crash)
+        // 2. Validate Idempotency 
         const isTransactionAlreadyExists = await transactionModel.findOne({ idempotencyKey }).session(session);
         if (isTransactionAlreadyExists) {
             await session.abortTransaction();
@@ -88,7 +88,7 @@ module.exports.createTransaction = async (req, res) => {
         });
         await transaction.save({ session });
 
-        // 5. Create Ledger Entries using insertMany (Fixed session error)
+        // 5. Create Ledger Entries using insertMany 
         await ledgerModel.insertMany([
             {
                 account: fromUserAccount._id,
@@ -104,7 +104,7 @@ module.exports.createTransaction = async (req, res) => {
             }
         ], { session });
 
-        // 6. Atomic Balance Updates ($inc prevents race conditions)
+        // 6. Atomic Balance Updates 
         await accountModel.updateOne(
             { _id: fromUserAccount._id },
             { $inc: { balance: -amount } },
@@ -137,7 +137,7 @@ module.exports.createTransaction = async (req, res) => {
         await session.endSession();
     }
 
-    // 8. Send Notification Email (Non-blocking outside DB transaction)
+    // 8. Send Notification Email 
     try {
         await sendTransactionEmail(req.user.email, req.user.name, amount, toAccount);
     } catch (emailError) {
@@ -188,7 +188,7 @@ module.exports.createInitialFundsTransaction = async (req, res) => {
             return res.status(400).json({ message: "Target account does not exist" });
         }
 
-        // 2. Validate Idempotency (Fixed variable name crash)
+        // 2. Validate Idempotency 
         const isTransactionAlreadyExists = await transactionModel.findOne({ idempotencyKey }).session(session);
         if (isTransactionAlreadyExists) {
             await session.abortTransaction();
@@ -219,7 +219,7 @@ module.exports.createInitialFundsTransaction = async (req, res) => {
         });
         await transaction.save({ session });
 
-        // 4. Create Ledger Entries using insertMany (Fixed session error)
+        // 4. Create Ledger Entries using insertMany 
         await ledgerModel.insertMany([
             {
                 account: fromUserAccount._id,
@@ -235,7 +235,7 @@ module.exports.createInitialFundsTransaction = async (req, res) => {
             }
         ], { session });
 
-        // 5. Atomic Balance Updates ($inc)
+        // 5. Atomic Balance Updates 
         await accountModel.updateOne(
             { _id: fromUserAccount._id },
             { $inc: { balance: -amount } },

@@ -135,3 +135,87 @@ module.exports.logoutController = async (req, res) => {
         });
     }
 };
+
+module.exports.sendOtpController = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        
+        const otp = req.otp;
+
+        console.log("OTP:", otp);
+
+        await sendEmail(
+            email,
+            "Password Reset OTP",
+            `Your password reset OTP is ${otp}. It expires in 5 minutes.`
+        );
+
+        return res.status(200).json({
+            message: "OTP sent successfully",
+            status: "success"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: error.message,
+            status: "failed"
+        });
+    }
+};
+
+
+
+module.exports.resetPassword = async (req, res) => {
+    try {
+        const { email, otp, password } = req.body;
+
+        const originalOtp = req.signedCookies.otp;
+
+        if (!originalOtp) {
+            return res.status(400).json({
+                message: "OTP expired or not found",
+                status: "failed"
+            });
+        }
+
+        if (String(otp) !== String(originalOtp)) {
+            return res.status(400).json({
+                message: "Invalid OTP",
+                status: "failed"
+            });
+        }
+
+        const user = await userModel.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                status: "failed"
+            });
+        }
+
+        // Set new password
+        user.password = password;
+
+        await user.save();
+
+        // OTP cannot be reused
+        res.clearCookie("otp");
+
+        return res.status(200).json({
+            message: "Password reset successfully",
+            status: "success"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: error.message,
+            status: "failed"
+        });
+    }
+};

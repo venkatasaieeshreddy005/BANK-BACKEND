@@ -1,6 +1,7 @@
 const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
 const tokenBlacklistModel = require("../models/blacklist");
+const generateOtp = require("../services/generateOtp");
 
 module.exports.authMiddleware = async (req, res, next) => {
     const token =
@@ -77,6 +78,48 @@ module.exports.authSystemMiddleware = async (req, res, next) => {
     } catch (error) {
         return res.status(401).json({
             message: "Unauthorized: access token is invalid",
+        });
+    }
+};
+
+module.exports.sendOtpMiddleware = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                message: "Email is required"
+            });
+        }
+
+       
+        const user = await userModel.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        
+        const otp = generateOtp();
+
+       
+        res.cookie("otp", otp, {
+            signed: true,
+            httpOnly: true,
+            maxAge: 5 * 60 * 1000,
+            sameSite: "strict"
+        });
+
+        
+        req.otp = otp;
+
+        return next();
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
         });
     }
 };

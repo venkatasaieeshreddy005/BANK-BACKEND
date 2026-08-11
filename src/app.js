@@ -10,7 +10,8 @@ const transactionRouter=require("./routes/transaction");
 
 
 app.use(express.json());
-app.use(cookieparser());
+app.use(cookieparser(process.env.COOKIE_SECRET));
+
 
 app.get("/",(req,res)=>{
     res.send("Bank Ledger Server is Running Successfully")
