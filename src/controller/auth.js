@@ -2,6 +2,8 @@ const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
 const { sendEmail, sendRegistrationEmail } = require("../services/email");
 const tokenBlacklistModel = require("../models/blacklist");
+const crypto = require("crypto");
+
 
 module.exports.registerUser = async (req, res) => {
     try {
@@ -30,7 +32,14 @@ module.exports.registerUser = async (req, res) => {
             { expiresIn: "2d" }
         );
 
-        res.cookie("token", token);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 2 * 24 * 60 * 60 * 1000
+        });
+
+
 
         res.status(201).json({
             user: {
@@ -76,7 +85,14 @@ module.exports.loginController = async (req, res) => {
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "2d" });
 
-        res.cookie("token", token);
+       res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 2 * 24 * 60 * 60 * 1000
+        });
+
+        // remove the token from sending the response when connected with frontend
 
         res.status(200).json({
             message: "Login Successful",
@@ -168,20 +184,27 @@ module.exports.sendOtpController = async (req, res) => {
 
 
 
+
 module.exports.resetPassword = async (req, res) => {
     try {
-        const { email, otp, password } = req.body;
+        const { otp, password } = req.body;
 
-        const originalOtp = req.signedCookies.otp;
+        const originalOtpHash = req.signedCookies.otp;
+        const email = req.signedCookies.resetEmail;
 
-        if (!originalOtp) {
+        if (!originalOtpHash || !email) {
             return res.status(400).json({
                 message: "OTP expired or not found",
                 status: "failed"
             });
         }
 
-        if (String(otp) !== String(originalOtp)) {
+        const submittedOtpHash = crypto
+            .createHash("sha256")
+            .update(String(otp))
+            .digest("hex");
+
+        if (submittedOtpHash !== originalOtpHash) {
             return res.status(400).json({
                 message: "Invalid OTP",
                 status: "failed"
@@ -197,13 +220,13 @@ module.exports.resetPassword = async (req, res) => {
             });
         }
 
-        // Set new password
         user.password = password;
 
         await user.save();
 
-        // OTP cannot be reused
+        // OTP and reset identity cannot be reused
         res.clearCookie("otp");
+        res.clearCookie("resetEmail");
 
         return res.status(200).json({
             message: "Password reset successfully",
@@ -211,11 +234,13 @@ module.exports.resetPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Reset password error:", error);
 
         return res.status(500).json({
-            message: error.message,
+            message: "Internal server error",
             status: "failed"
         });
     }
 };
+
+

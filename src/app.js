@@ -10,7 +10,10 @@ const transactionRouter=require("./routes/transaction");
 
 
 app.use(express.json());
-app.use(cookieparser(process.env.COOKIE_SECRET));
+const cookieParser = require("cookie-parser");
+
+app.use(cookieParser(process.env.COOKIE_SECRET));
+
 
 
 app.get("/",(req,res)=>{

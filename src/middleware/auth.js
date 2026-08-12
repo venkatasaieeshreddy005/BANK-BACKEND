@@ -2,6 +2,8 @@ const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
 const tokenBlacklistModel = require("../models/blacklist");
 const generateOtp = require("../services/generateOtp");
+const crypto = require("crypto");
+
 
 module.exports.authMiddleware = async (req, res, next) => {
     const token =
@@ -104,16 +106,29 @@ module.exports.sendOtpMiddleware = async (req, res, next) => {
         
         const otp = generateOtp();
 
-       
-        res.cookie("otp", otp, {
+        const otpHash = crypto
+            .createHash("sha256")
+            .update(String(otp))
+            .digest("hex");
+
+        res.cookie("otp", otpHash, {
             signed: true,
             httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
             maxAge: 5 * 60 * 1000,
             sameSite: "strict"
         });
 
-        
+        res.cookie("resetEmail", email, {
+            signed: true,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 5 * 60 * 1000
+        });
+
         req.otp = otp;
+
 
         return next();
 

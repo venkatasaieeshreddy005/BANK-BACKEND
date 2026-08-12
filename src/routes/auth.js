@@ -2,24 +2,19 @@ const express=require('express');
 const router=express.Router();
 const {registerUser,loginController,logoutController,sendOtpController,resetPassword}=require("../controller/auth");
 const {authMiddleware,sendOtpMiddleware}=require("../middleware/auth");
+const {otpRequestLimiter,otpVerifyLimiter} = require("../middleware/rateLimiter");
+const validate = require("../middleware/validate");
+const {registerSchema,loginSchema,sendOtpSchema,resetPasswordSchema} = require("../validators/authValidator");
 
 
-router.post("/register",registerUser);
+router.post("/register",validate(registerSchema),registerUser);
 
-router.post("/login",loginController);
+router.post("/login",validate(loginSchema),loginController);
 
 router.post("/logout",authMiddleware,logoutController);
-router.post(
-    "/send-otp",
-    authMiddleware,
-    sendOtpMiddleware,
-    sendOtpController
-);
 
-router.post(
-    "/reset",
-    authMiddleware,
-    resetPassword
-);
+router.post("/send-otp",validate(sendOtpSchema),otpRequestLimiter,sendOtpMiddleware,sendOtpController);
+
+router.post("/reset",validate(resetPasswordSchema),otpVerifyLimiter,resetPassword);
 
 module.exports=router;

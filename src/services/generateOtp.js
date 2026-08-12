@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
 const generateOtp = () => {
-    return crypto.randomInt(1000, 10000).toString();
+    return crypto.randomInt(100000, 1000000).toString();
 };
 
 module.exports = generateOtp;
