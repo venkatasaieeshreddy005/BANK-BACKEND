@@ -283,3 +283,101 @@ module.exports.createInitialFundsTransaction = async (req, res) => {
         transaction
     });
 };
+
+module.exports.showAllTransactions = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+        const skip = (page - 1) * limit;
+
+        // Optional: filter to a single account via ?accountId=...
+        const { accountId } = req.query;
+
+        // 1. Get all account IDs belonging to this user
+        const userAccounts = await accountModel.find({ user: userId }).select("_id accountType");
+
+        if (userAccounts.length === 0) {
+            return res.status(200).json({
+                transactions: [],
+                page,
+                totalPages: 0,
+                totalTransactions: 0
+            });
+        }
+
+        let accountIds = userAccounts.map(acc => acc._id);
+
+        // If the user asked for a specific account, narrow to just that one
+        // (but still verify it belongs to them)
+        if (accountId) {
+            const owns = accountIds.some(id => id.toString() === accountId);
+            if (!owns) {
+                return res.status(403).json({ message: "This account does not belong to you" });
+            }
+            accountIds = [accountId];
+        }
+
+        // 2. Find transactions where ANY of the user's accounts is sender OR receiver
+        const filter = {
+            $or: [
+                { fromAccount: { $in: accountIds } },
+                { toAccount: { $in: accountIds } }
+            ]
+        };
+
+        const [transactions, totalTransactions] = await Promise.all([
+            transactionModel
+                .find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate("fromAccount", "accountType currency user")
+                .populate("toAccount", "accountType currency user"),
+            transactionModel.countDocuments(filter)
+        ]);
+
+        // 3. Build a set of ALL the user's account IDs (not the possibly-narrowed one)
+        //    so we can correctly detect self-transfers between the user's own accounts
+        const allUserAccountIds = new Set(userAccounts.map(acc => acc._id.toString()));
+
+        const result = transactions.map(txn => {
+            const fromIsMine = allUserAccountIds.has(txn.fromAccount._id.toString());
+            const toIsMine = allUserAccountIds.has(txn.toAccount._id.toString());
+
+            let direction;
+            if (fromIsMine && toIsMine) {
+                direction = "SELF_TRANSFER"; // moved between your own accounts
+            } else if (fromIsMine) {
+                direction = "SENT";
+            } else {
+                direction = "RECEIVED";
+            }
+
+            return {
+                _id: txn._id,
+                direction,
+                amount: txn.amount,
+                status: txn.status,
+                // which of the user's own accounts was involved on each side (if any)
+                fromAccount: txn.fromAccount,
+                toAccount: txn.toAccount,
+                createdAt: txn.createdAt
+            };
+        });
+
+        return res.status(200).json({
+            transactions: result,
+            page,
+            totalPages: Math.ceil(totalTransactions / limit),
+            totalTransactions
+        });
+
+    } catch (error) {
+        console.error("Fetch transactions error:", error);
+        return res.status(500).json({
+            message: "Failed to fetch transactions"
+        });
+    }
+};

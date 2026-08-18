@@ -53,7 +53,6 @@ const resetPasswordSchema = Joi.object({
 });
 
 
-
 module.exports = {
     registerSchema,
     loginSchema,

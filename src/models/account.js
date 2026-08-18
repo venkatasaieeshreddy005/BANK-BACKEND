@@ -15,6 +15,7 @@ const accountSchema = new mongoose.Schema(
                 values: ["SAVINGS", "CURRENT", "SALARY", "BUSINESS"],
                 message: "Invalid account type",
             },
+            
             required: [true, "Account type is required"],
         },
 
