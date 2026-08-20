@@ -5,6 +5,11 @@ const cookieParser = require("cookie-parser");
 const authrouter = require("./routes/auth");
 const accountRouter = require("./routes/account");
 const transactionRouter = require("./routes/transaction");
+const friendRoutes = require("./routes/friendRoutes");
+const billRoutes = require("./routes/billRoutes");
+const splitBillRoutes = require("./routes/splitBillRoutes");
+
+
 
 const app = express();
 
@@ -26,5 +31,8 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authrouter);
 app.use("/api/accounts", accountRouter);
 app.use("/api/transactions", transactionRouter);
+app.use("/api/friends", friendRoutes);
+app.use("/api/bills", billRoutes);
+app.use("/api/split-bills", splitBillRoutes);
 
 module.exports = app;
