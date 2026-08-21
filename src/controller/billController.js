@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const Bill = require("../models/billModel");
-const Account = require('../models/account');
+const Account = require("../models/account");
 
 const { moveFunds } = require("../services/escrowTransfer");
 const { paySplitShareCore } = require("./splitBillController");
@@ -10,29 +10,20 @@ const { paySplitShareCore } = require("./splitBillController");
 module.exports.listMyBills = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { status } = req.query; // optional ?status=UNPAID
+    const { status } = req.query;
 
-    const filter = {
-      user: userId,
-    };
+    const filter = { user: userId };
 
     if (status) {
       filter.status = status;
     }
 
-    const bills = await Bill.find(filter).sort({
-      createdAt: -1,
-    });
+    const bills = await Bill.find(filter).sort({ createdAt: -1 });
 
-    return res.json({
-      bills,
-    });
+    return res.json({ bills });
   } catch (err) {
     console.error("listMyBills error:", err);
-
-    return res.status(500).json({
-      message: "Failed to list bills",
-    });
+    return res.status(500).json({ message: "Failed to list bills" });
   }
 };
 
@@ -41,6 +32,9 @@ module.exports.payBill = async (req, res) => {
   try {
     const userId = req.user._id;
     const { id } = req.params;
+    const { fromAccount, payerAccountId } = req.body;
+
+    const chosenAccountId = fromAccount || payerAccountId;
 
     const bill = await Bill.findOne({
       _id: id,
@@ -48,30 +42,23 @@ module.exports.payBill = async (req, res) => {
     });
 
     if (!bill) {
-      return res.status(404).json({
-        message: "Bill not found",
-      });
+      return res.status(404).json({ message: "Bill not found" });
     }
 
     if (bill.status === "PAID") {
-      return res.json({
-        message: "Already paid",
-        bill,
-      });
+      return res.json({ message: "Already paid", bill });
     }
 
     if (bill.status === "CANCELLED") {
-      return res.status(409).json({
-        message: "This bill was cancelled",
-      });
+      return res.status(409).json({ message: "This bill was cancelled" });
     }
 
-    // Mirrored split-bill share uses the escrow flow.
-    // This keeps split payments and refunds in one place.
+    // Handle split bill share payments via core module
     if (bill.sourceSplitBill) {
       const result = await paySplitShareCore({
         splitBillId: bill.sourceSplitBill,
         userId,
+        fromAccountId: chosenAccountId,
       });
 
       const refreshedBill = await Bill.findById(bill._id);
@@ -82,27 +69,46 @@ module.exports.payBill = async (req, res) => {
           : result.alreadyPaid
           ? "Already paid"
           : "Payment successful — waiting on other participants",
-
         bill: refreshedBill,
       });
     }
 
-    // Plain bill: pay the payer's account directly to the receiver.
+    // Plain bill payment directly to the receiver account
     const session = await mongoose.startSession();
 
     try {
       let transaction;
 
       await session.withTransaction(async () => {
-        const payerAccount = await Account.findOne({
-          user: userId,
-        }).session(session);
+        let accountQuery = { user: userId };
 
-        if (!payerAccount) {
-          throw new Error("No account found for this user");
+        if (chosenAccountId) {
+          if (!mongoose.Types.ObjectId.isValid(chosenAccountId)) {
+            const err = new Error("Invalid account ID format");
+            err.statusCode = 400;
+            throw err;
+          }
+          accountQuery._id = chosenAccountId;
         }
 
-        // Existing account system stores money as whole rupees.
+        const payerAccount = await Account.findOne(accountQuery).session(session);
+
+        if (!payerAccount) {
+          const err = new Error(
+            chosenAccountId
+              ? "Specified account not found or does not belong to you"
+              : "No account found for this user"
+          );
+          err.statusCode = 404;
+          throw err;
+        }
+
+        if (payerAccount.status && payerAccount.status !== "ACTIVE") {
+          const err = new Error("Selected account is not active");
+          err.statusCode = 400;
+          throw err;
+        }
+
         const amount = bill.amount;
 
         if (!Number.isInteger(amount) || amount < 1) {
@@ -121,9 +127,7 @@ module.exports.payBill = async (req, res) => {
         bill.status = "PAID";
         bill.transaction = transaction._id;
 
-        await bill.save({
-          session,
-        });
+        await bill.save({ session });
       });
 
       return res.json({

@@ -30,6 +30,12 @@ const splitParticipantSchema = new Schema(
       index: true,
     },
 
+    payerAccount: {
+      type: Schema.Types.ObjectId,
+      ref: "Account",
+      default: null,
+    },
+
     transaction: {
       type: Schema.Types.ObjectId,
       ref: "Transaction",
