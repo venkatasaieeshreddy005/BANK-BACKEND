@@ -24,7 +24,7 @@ module.exports.registerUser = async (req, res) => {
             password
         });
 
-        await user.save(); // password gets hashed automatically
+        await user.save(); 
 
         const token = jwt.sign(
             { userId: user._id },

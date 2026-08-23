@@ -14,13 +14,10 @@ const { cancelExpiredSplitBills } = require("./src/controller/splitBillControlle
 // 3. Connect DB and start server
 connectDB();
 
-// Only start the cron job once Mongo is actually connected —
-// running it before that would throw on every DB call.
 mongoose.connection.once("open", () => {
     console.log("MongoDB connected — starting scheduled jobs");
 
-    // Runs every 5 minutes. Refunds/cancels any split bill
-    // whose expiresAt has passed and is still AWAITING_PAYMENTS.
+   
     cron.schedule("*/5 * * * *", async () => {
         try {
             await cancelExpiredSplitBills();
@@ -29,8 +26,7 @@ mongoose.connection.once("open", () => {
         }
     });
 
-    // Run once immediately on boot too, so bills that expired
-    // while the server was down don't sit stuck until the next tick.
+  
     cancelExpiredSplitBills().catch((err) =>
         console.error("cancelExpiredSplitBills initial run failed:", err)
     );

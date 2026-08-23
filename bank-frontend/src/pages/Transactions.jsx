@@ -12,16 +12,14 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // UI Filters & Details Modal
+
   const [filterType, setFilterType] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTx, setSelectedTx] = useState(null);
 
-  // 1. Fetch user accounts to populate the account type dropdown
   const fetchAccounts = async () => {
     try {
       const res = await api.get("/accounts");
-      // Adjust according to your response structure (e.g., res.data.accounts or res.data)
       const accountData = Array.isArray(res.data) ? res.data : res.data.accounts || [];
       setAccounts(accountData);
     } catch (err) {
@@ -29,7 +27,7 @@ export default function Transactions() {
     }
   };
 
-  // 2. Fetch transaction history with accountId filter sent to backend
+
   const fetchTransactions = async () => {
     try {
       setLoading(true);
@@ -40,7 +38,7 @@ export default function Transactions() {
         params.accountId = selectedAccountId;
       }
 
-      // Endpoint matches app.use("/api/transactions") + router.get("/history")
+  
       const res = await api.get("/transactions/history", { params });
       const data = res.data;
 
@@ -66,7 +64,7 @@ export default function Transactions() {
     fetchTransactions();
   }, [page, selectedAccountId]);
 
-  // Client-side filtering for UI Search Bar & Direction Tabs (SENT/RECEIVED/SELF_TRANSFER)
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
       const matchesType =
@@ -89,7 +87,7 @@ export default function Transactions() {
     });
   }, [transactions, filterType, searchQuery]);
 
-  // Metric totals calculation
+
   const metrics = useMemo(() => {
     return filteredTransactions.reduce(
       (acc, tx) => {
@@ -103,7 +101,7 @@ export default function Transactions() {
     );
   }, [filteredTransactions]);
 
-  // Safe Account Identifier extractors
+
   const getAccId = (acc) =>
     typeof acc === "object" && acc !== null ? acc._id : acc || "N/A";
   const getAccType = (acc) =>

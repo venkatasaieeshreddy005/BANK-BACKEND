@@ -14,7 +14,7 @@ module.exports.createAccountController = async (req, res) => {
       });
     }
 
-    // Bug Fix 1: Check if an account of this type already exists for the user
+    // Check if an account of this type already exists for the user
     const existingAccount = await accountModel.findOne({
       user: user._id,
       accountType: selectedType,
@@ -26,7 +26,7 @@ module.exports.createAccountController = async (req, res) => {
       });
     }
 
-    // Bug Fix 2: Balance strictly defaults to 0
+    //Balance strictly defaults to 0
     const account = await accountModel.create({
       user: user._id,
       accountType: selectedType,

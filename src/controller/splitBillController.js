@@ -17,11 +17,7 @@ const { sendNotification } = require("../services/notify");
 const MAX_FRIENDS_PER_SPLIT = 3;
 const SPLIT_EXPIRY_HOURS = 2;
 
-/**
- * Validates and returns account ID.
- * If providedAccountId is passed, verifies ownership and active status.
- * Otherwise falls back to finding an active account owned by the user.
- */
+
 async function resolveAndValidateAccount(userId, providedAccountId, session) {
   let query = { user: userId };
 
@@ -66,7 +62,6 @@ function computeEqualShares(totalAmount, participantUserIds) {
   }));
 }
 
-// POST /api/split-bills
 module.exports.createSplitBill = async (req, res) => {
   const hostId = req.user._id;
 
@@ -270,9 +265,7 @@ module.exports.createSplitBill = async (req, res) => {
   }
 };
 
-/**
- * Core pay logic now accepts an optional explicit `fromAccountId`.
- */
+
 async function paySplitShareCore({ splitBillId, userId, fromAccountId }) {
   const session = await mongoose.startSession();
 
@@ -423,7 +416,6 @@ async function paySplitShareCore({ splitBillId, userId, fromAccountId }) {
   }
 }
 
-// POST /api/split-bills/:id/pay
 module.exports.paySplitShare = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -462,7 +454,6 @@ module.exports.paySplitShare = async (req, res) => {
   }
 };
 
-// GET /api/split-bills/:id
 module.exports.getSplitBill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -483,7 +474,6 @@ module.exports.getSplitBill = async (req, res) => {
   }
 };
 
-// GET /api/split-bills
 module.exports.listMySplitBills = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -505,10 +495,7 @@ module.exports.listMySplitBills = async (req, res) => {
   }
 };
 
-/**
- * Refund/cancel expired split bills.
- * Returns funds directly to participant.payerAccount if stored.
- */
+
 module.exports.cancelExpiredSplitBills = async () => {
   const expired = await SplitBill.find({
     status: "AWAITING_PAYMENTS",

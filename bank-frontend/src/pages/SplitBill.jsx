@@ -15,16 +15,15 @@ export default function SplitBill() {
   const [fetchingFriends, setFetchingFriends] = useState(true);
   const [selectedFriendIds, setSelectedFriendIds] = useState([]);
 
-  // Manual fallback input for custom Friend User ID
   const [manualFriendInput, setManualFriendInput] = useState("");
 
-  // Object storing user ID -> share amount for CUSTOM split
+
   const [customSharesMap, setCustomSharesMap] = useState({});
 
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
 
-  // Fetch host profile and friends list on mount
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {

@@ -1,47 +1,44 @@
 const Friend = require("../models/friendModel");
 const User = require("../models/user");
 
-// POST /api/friends  { friendId }  OR { friendEmail }
+
 module.exports.addFriend = async (req, res) => {
   try {
     const requesterId = req.user._id;
     const { friendId, friendEmail } = req.body;
 
-    let targetId = friendId;
+    // Get the raw input from either field
+    const input = (friendId || friendEmail || "").trim();
 
-    if (!targetId && friendEmail) {
-      const targetUser = await User.findOne({
-        email: friendEmail.toLowerCase(),
-      }).select("_id");
-
-      if (!targetUser) {
-        return res.status(404).json({
-          message: "No user with that email",
-        });
-      }
-
-      targetId = targetUser._id;
-    }
-
-    if (!targetId) {
+    if (!input) {
       return res.status(400).json({
-        message: "friendId or friendEmail is required",
+        message: "Friend ID or Email is required",
       });
     }
+
+    let targetUser = null;
+
+    // Check if the input is an email address
+    if (input.includes("@")) {
+      targetUser = await User.findOne({
+        email: input.toLowerCase(),
+      }).select("_id");
+    } else {
+      
+      targetUser = await User.findById(input).select("_id");
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({
+        message: "User not found with that ID or email",
+      });
+    }
+
+    const targetId = targetUser._id;
 
     if (String(targetId) === String(requesterId)) {
       return res.status(400).json({
         message: "You cannot add yourself as a friend",
-      });
-    }
-
-    const targetExists = await User.exists({
-      _id: targetId,
-    });
-
-    if (!targetExists) {
-      return res.status(404).json({
-        message: "User not found",
       });
     }
 
@@ -68,7 +65,7 @@ module.exports.addFriend = async (req, res) => {
   }
 };
 
-// GET /api/friends
+
 module.exports.listFriends = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -93,7 +90,7 @@ module.exports.listFriends = async (req, res) => {
   }
 };
 
-// DELETE /api/friends/:friendId
+
 module.exports.removeFriend = async (req, res) => {
   try {
     const userId = req.user._id;

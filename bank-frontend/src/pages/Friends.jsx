@@ -6,6 +6,7 @@ export default function Friends() {
   const [friendId, setFriendId] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const fetchFriends = async () => {
@@ -43,6 +44,26 @@ export default function Friends() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRemoveFriend = async (targetFriendId) => {
+    if (!window.confirm("Are you sure you want to remove this friend?")) return;
+
+    setMessage({ type: "", text: "" });
+    setDeletingId(targetFriendId);
+
+    try {
+      await api.delete(`/friends/${targetFriendId}`);
+      setMessage({ type: "success", text: "Friend removed successfully." });
+      fetchFriends();
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to remove friend.",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -84,7 +105,7 @@ export default function Friends() {
           <button
             type="submit"
             disabled={submitting || !friendId.trim()}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm transition disabled:opacity-50 shrink-0"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm transition disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {submitting ? "Adding..." : "Add Friend"}
           </button>
@@ -110,10 +131,12 @@ export default function Friends() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {friends.map((item, idx) => {
               const friend = item.friend || item;
+              const targetId = friend._id || item._id;
+
               return (
                 <div
-                  key={friend._id || idx}
-                  className="p-4 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between"
+                  key={targetId || idx}
+                  className="p-4 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 truncate">
                     <div className="w-10 h-10 rounded-full bg-blue-600/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold text-sm shrink-0">
@@ -121,12 +144,20 @@ export default function Friends() {
                     </div>
                     <div className="truncate">
                       <p className="text-sm font-medium text-white truncate">{friend.name || "Friend User"}</p>
-                      <p className="text-xs text-slate-400 truncate">{friend.email || `ID: ${friend._id}`}</p>
+                      <p className="text-xs text-slate-400 truncate">{friend.email || `ID: ${targetId}`}</p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    Connected
-                  </span>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleRemoveFriend(targetId)}
+                      disabled={deletingId === targetId}
+                      title="Remove Friend"
+                      className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition text-xs font-medium cursor-pointer disabled:opacity-50"
+                    >
+                      {deletingId === targetId ? "..." : "Remove"}
+                    </button>
+                  </div>
                 </div>
               );
             })}

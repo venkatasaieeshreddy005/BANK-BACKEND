@@ -6,7 +6,7 @@ const Account = require("../models/account");
 const { moveFunds } = require("../services/escrowTransfer");
 const { paySplitShareCore } = require("./splitBillController");
 
-// GET /api/bills
+
 module.exports.listMyBills = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -27,7 +27,6 @@ module.exports.listMyBills = async (req, res) => {
   }
 };
 
-// POST /api/bills/:id/pay
 module.exports.payBill = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -53,7 +52,7 @@ module.exports.payBill = async (req, res) => {
       return res.status(409).json({ message: "This bill was cancelled" });
     }
 
-    // Handle split bill share payments via core module
+    
     if (bill.sourceSplitBill) {
       const result = await paySplitShareCore({
         splitBillId: bill.sourceSplitBill,
@@ -73,7 +72,7 @@ module.exports.payBill = async (req, res) => {
       });
     }
 
-    // Plain bill payment directly to the receiver account
+    
     const session = await mongoose.startSession();
 
     try {

@@ -12,11 +12,11 @@ export default function Transfer() {
   const [amount, setAmount] = useState("");
   const [selectedFriend, setSelectedFriend] = useState("");
 
-  // Data State
+
   const [userAccounts, setUserAccounts] = useState([]);
   const [friends, setFriends] = useState([]);
 
-  // UI State
+
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -51,7 +51,6 @@ export default function Transfer() {
     fetchData();
   }, []);
 
-  // Handle auto-filling To Account from friend selection
   const handleSelectFriend = (e) => {
     const value = e.target.value;
     setSelectedFriend(value);
@@ -76,7 +75,6 @@ export default function Transfer() {
 
     setLoading(true);
 
-    // Generate standard UUID or timestamp-based key for backend idempotency
     const idempotencyKey =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()

@@ -21,23 +21,11 @@ class IdempotencyConflictError extends Error {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| System / Escrow Account
-|--------------------------------------------------------------------------
-|
-| Existing User schema:
-|   systemUser: Boolean
-|
-| Existing Account schema:
-|   user: ObjectId
-|
-*/
+
 
 async function getSystemAccountId(session) {
-    /*
-     * System account lookup must happen inside the transaction.
-     */
+    //  System account lookup must happen inside the transaction.
+     
 
     if (!session) {
         throw new Error(
@@ -45,9 +33,9 @@ async function getSystemAccountId(session) {
         );
     }
 
-    /*
-     * Find the system user.
-     */
+    
+    //   Find the system user.
+     
 
     const userQuery = User.findOne({
         systemUser: true
@@ -63,9 +51,9 @@ async function getSystemAccountId(session) {
         );
     }
 
-    /*
-     * Find the account belonging to the system user.
-     */
+   
+    //  Find the account belonging to the system user.
+  
 
     const accountQuery = Account.findOne({
         user: systemUser._id
@@ -90,27 +78,7 @@ async function getSystemAccountId(session) {
     return systemAccount._id;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Move Funds
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| This application stores money as INTEGER RUPEES.
-|
-| Examples:
-|
-|   100.00 -> 100
-|   100.40 -> 100
-|   100.50 -> 101
-|   100.90 -> 101
-|
-| Math.round() is applied here so every caller gets the same
-| money-handling behavior.
-|
-|--------------------------------------------------------------------------
-*/
+
 
 async function moveFunds({
     session,
@@ -121,11 +89,7 @@ async function moveFunds({
     type
 }) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | 1. Validate session
-    |--------------------------------------------------------------------------
-    */
+    // 1. Validate session
 
     if (!session) {
         throw new Error(
@@ -133,11 +97,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 2. Validate required fields
-    |--------------------------------------------------------------------------
-    */
+    //  2. Validate required fields
 
     if (!fromAccountId) {
         throw new Error("fromAccountId is required");
@@ -155,11 +115,7 @@ async function moveFunds({
         throw new Error("type is required");
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 3. Validate amount
-    |--------------------------------------------------------------------------
-    */
+    // 3. Validate amount
 
     if (
         typeof amount !== "number" ||
@@ -176,14 +132,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 4. Convert to nearest INTEGER RUPEE
-    |--------------------------------------------------------------------------
-    |
-    | This is the ONLY rounding point in the money-transfer layer.
-    |
-    */
+    // 4. Convert to nearest INTEGER RUPEE
 
     const amountRupees = Math.round(amount);
 
@@ -193,11 +142,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 5. Prevent same-account transfer
-    |--------------------------------------------------------------------------
-    */
+    // 5. Prevent same-account transfer
 
     if (
         String(fromAccountId) === String(toAccountId)
@@ -207,16 +152,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 6. Idempotency check
-    |--------------------------------------------------------------------------
-    |
-    | If the request was already processed, return the original
-    | transaction without moving money again.
-    |--------------------------------------------------------------------------
-    */
-
+    // 6. Idempotency check
     const existingTransaction =
         await Transaction.findOne({
             idempotencyKey
@@ -224,9 +160,8 @@ async function moveFunds({
 
     if (existingTransaction) {
 
-        /*
-         * The same idempotency key must represent the same operation.
-         */
+        //  The same idempotency key must represent the same operation.
+         
 
         const sameTransaction =
             String(existingTransaction.fromAccount) ===
@@ -242,24 +177,12 @@ async function moveFunds({
             throw new IdempotencyConflictError();
         }
 
-        /*
-         * Already processed.
-         *
-         * Do NOT:
-         * - create another transaction
-         * - create another ledger entry
-         * - debit again
-         * - credit again
-         */
+        
 
         return existingTransaction;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 7. Find source account
-    |--------------------------------------------------------------------------
-    */
+//    7. Find source account
 
     const fromAccount =
         await Account.findOne({
@@ -272,11 +195,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 8. Find destination account
-    |--------------------------------------------------------------------------
-    */
+    //  8. Find destination account
 
     const toAccount =
         await Account.findOne({
@@ -289,11 +208,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 9. Check account status
-    |--------------------------------------------------------------------------
-    */
+    // 9. Check account status
 
     if (fromAccount.status !== "ACTIVE") {
         throw new Error(
@@ -307,27 +222,13 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 10. Check balance
-    |--------------------------------------------------------------------------
-    |
-    | Both values are INTEGER RUPEES.
-    |--------------------------------------------------------------------------
-    */
+    // 10. Check balance
 
     if (fromAccount.balance < amountRupees) {
         throw new InsufficientFundsError();
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 11. Create transaction
-    |--------------------------------------------------------------------------
-    |
-    | Using insertMany to safely create documents within an active session.
-    |--------------------------------------------------------------------------
-    */
+//    11. Create transaction
 
     const [transaction] =
         await Transaction.insertMany(
@@ -352,14 +253,7 @@ async function moveFunds({
             }
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | 12. Create ledger entries
-    |--------------------------------------------------------------------------
-    |
-    | Using insertMany to safely create documents within an active session.
-    |--------------------------------------------------------------------------
-    */
+    // 12. Create ledger entries
 
     await Ledger.insertMany(
         [
@@ -381,14 +275,7 @@ async function moveFunds({
         }
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | 13. Debit source account
-    |--------------------------------------------------------------------------
-    |
-    | Balance check is also included in the update itself.
-    |--------------------------------------------------------------------------
-    */
+    // 13. Debit source account
 
     const debitResult =
         await Account.updateOne(
@@ -415,11 +302,7 @@ async function moveFunds({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 14. Credit destination account
-    |--------------------------------------------------------------------------
-    */
+    // 14. Credit destination account
 
     const creditResult =
         await Account.updateOne(

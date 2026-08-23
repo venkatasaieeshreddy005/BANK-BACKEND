@@ -18,7 +18,7 @@ module.exports.authMiddleware = async (req, res, next) => {
 
     const isBlacklisted = await tokenBlacklistModel.findOne({ token });
     if (isBlacklisted) {
-        return res.status(401).json({ // Fixed typo: res.sstatus -> res.status
+        return res.status(401).json({ 
             message: "Unauthorized token invalid"
         });
     }
@@ -57,7 +57,7 @@ module.exports.authSystemMiddleware = async (req, res, next) => {
 
     const isBlacklisted = await tokenBlacklistModel.findOne({ token });
     if (isBlacklisted) {
-        return res.status(401).json({ // Fixed typo: res.sstatus -> res.status
+        return res.status(401).json({ 
             message: "Unauthorized token invalid"
         });
     }
