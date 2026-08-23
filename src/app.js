@@ -9,19 +9,16 @@ const friendRoutes = require("./routes/friendRoutes");
 const billRoutes = require("./routes/billRoutes");
 const splitBillRoutes = require("./routes/splitBillRoutes");
 
-
-
 const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
     credentials: true,
   })
 );
 
 app.use(express.json());
-
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.get("/", (req, res) => {
