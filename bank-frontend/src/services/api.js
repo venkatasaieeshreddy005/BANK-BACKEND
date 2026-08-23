@@ -1,7 +1,12 @@
 import axios from "axios";
 
+// Automatically switch between localhost and your live Render backend URL
+const baseURL = window.location.hostname === "localhost"
+  ? "http://localhost:3000/api"
+  : "https://vaulta-uani.onrender.com/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:3000/api", 
+  baseURL: baseURL, 
   withCredentials: true,
 });
 
