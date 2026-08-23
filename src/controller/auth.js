@@ -34,8 +34,8 @@ module.exports.registerUser = async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 2 * 24 * 60 * 60 * 1000
         });
 
@@ -87,8 +87,8 @@ module.exports.loginController = async (req, res) => {
 
        res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 2 * 24 * 60 * 60 * 1000
         });
 
@@ -129,7 +129,11 @@ module.exports.logoutController = async (req, res) => {
             token: token
         });
 
-        res.clearCookie("token");
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
 
         return res.status(200).json({
             message: "User logged out successfully"
@@ -138,7 +142,11 @@ module.exports.logoutController = async (req, res) => {
     } catch (error) {
         // Token is already blacklisted
         if (error.code === 11000) {
-            res.clearCookie("token");
+            res.clearCookie("token", {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none"
+            });
 
             return res.status(200).json({
                 message: "User logged out successfully"
@@ -259,5 +267,3 @@ module.exports.getCurrentUser = async (req, res) => {
         });
     }
 };
-
-
